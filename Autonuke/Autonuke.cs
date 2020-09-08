@@ -47,7 +47,7 @@ namespace Autonuke
 		public bool CanStopDetonation { get; set; } = false;
 
 		[Description("The amount of time in seconds before the nuke starts.")]
-		public float TimeUntilStart { get; set; } = 10f;
+		public float TimeUntilStart { get; set; } = 900f;
 	}
 
 	public class EventHandlers

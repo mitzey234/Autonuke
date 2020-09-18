@@ -53,11 +53,23 @@ namespace Autonuke
 	public class EventHandlers
 	{
 		private CoroutineHandle coroutine;
+		private bool isAutoNukeGoingOff = false;
 
-		internal void OnRoundStarted() => coroutine = Timing.CallDelayed(Autonuke.instance.Config.TimeUntilStart, () => Warhead.Start());
+		internal void OnRoundStarted()
+		{
+			coroutine = Timing.CallDelayed(Autonuke.instance.Config.TimeUntilStart, () =>
+			{
+				if (!Warhead.IsInProgress) Warhead.Start();
+				isAutoNukeGoingOff = true;
+			});
+		}
 
-		internal void OnRoundRestart() => Timing.KillCoroutines(coroutine);
+		internal void OnRoundRestart()
+		{
+			Timing.KillCoroutines(coroutine);
+			isAutoNukeGoingOff = false;
+		}
 
-		internal void OnWarheadStop(StoppingEventArgs ev) => ev.IsAllowed = Autonuke.instance.Config.CanStopDetonation;
+		internal void OnWarheadStop(StoppingEventArgs ev) => ev.IsAllowed = !(!Autonuke.instance.Config.CanStopDetonation && isAutoNukeGoingOff);
 	}
 }

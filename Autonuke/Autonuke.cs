@@ -3,6 +3,7 @@ using Exiled.API.Interfaces;
 using MEC;
 using System.ComponentModel;
 using Exiled.Events.EventArgs;
+using System.Collections.Generic;
 
 namespace Autonuke
 {
@@ -11,10 +12,13 @@ namespace Autonuke
 		private EventHandlers ev;
 		internal static Autonuke instance;
 
+		internal CoroutineHandle coroutine;
+
+		private bool state = false;
+
 		public override void OnEnabled()
 		{
-			base.OnEnabled();
-
+			if (state) return;
 			ev = new EventHandlers();
 
 			instance = this;
@@ -22,17 +26,24 @@ namespace Autonuke
 			Exiled.Events.Handlers.Server.RoundStarted += ev.OnRoundStarted;
 			Exiled.Events.Handlers.Server.RestartingRound += ev.OnRoundRestart;
 			Exiled.Events.Handlers.Warhead.Stopping += ev.OnWarheadStop;
+
+			state = true;
+			base.OnEnabled();
 		}
 
 		public override void OnDisabled()
 		{
-			base.OnDisabled();
+			if (!state) return;
 
 			Exiled.Events.Handlers.Server.RoundStarted -= ev.OnRoundStarted;
 			Exiled.Events.Handlers.Server.RestartingRound -= ev.OnRoundRestart;
 			Exiled.Events.Handlers.Warhead.Stopping -= ev.OnWarheadStop;
 
+			Timing.KillCoroutines(coroutine);
+
 			ev = null;
+			state = false;
+			base.OnDisabled();
 		}
 
 		public override string Name => "Autonuke";
@@ -52,21 +63,24 @@ namespace Autonuke
 
 	public class EventHandlers
 	{
-		private CoroutineHandle coroutine;
 		private bool isAutoNukeGoingOff = false;
 
 		internal void OnRoundStarted()
 		{
-			coroutine = Timing.CallDelayed(Autonuke.instance.Config.TimeUntilStart, () =>
-			{
-				if (!Warhead.IsInProgress) Warhead.Start();
-				isAutoNukeGoingOff = true;
-			});
+			if (Autonuke.instance.coroutine.IsRunning) Timing.KillCoroutines(Autonuke.instance.coroutine);
+			Autonuke.instance.coroutine = Timing.RunCoroutine(Timer());
+		}
+
+		internal IEnumerator<float> Timer ()
+        {
+			for (int i = 0; i<Autonuke.instance.Config.TimeUntilStart; i++) yield return Timing.WaitForSeconds(1f);
+			if (!Warhead.IsInProgress) Warhead.Start();
+			isAutoNukeGoingOff = true;
 		}
 
 		internal void OnRoundRestart()
 		{
-			Timing.KillCoroutines(coroutine);
+			Timing.KillCoroutines(Autonuke.instance.coroutine);
 			isAutoNukeGoingOff = false;
 		}
 

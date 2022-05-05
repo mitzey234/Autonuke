@@ -39,9 +39,7 @@ namespace Autonuke
 			Exiled.Events.Handlers.Server.RestartingRound -= ev.OnRoundRestart;
 			Exiled.Events.Handlers.Warhead.Stopping -= ev.OnWarheadStop;
 
-            Timing.KillCoroutines(coroutine);
-
-			instance = null;
+			Timing.KillCoroutines(coroutine);
 
 			ev = null;
 			state = false;
@@ -71,17 +69,14 @@ namespace Autonuke
 		{
 			if (Autonuke.instance.coroutine.IsRunning) Timing.KillCoroutines(Autonuke.instance.coroutine);
 			Autonuke.instance.coroutine = Timing.RunCoroutine(Timer());
-            //Log.Debug("Started Coroutine");
-        }
+		}
 
 		internal IEnumerator<float> Timer ()
         {
 			for (int i = 0; i<Autonuke.instance.Config.TimeUntilStart; i++) yield return Timing.WaitForSeconds(1f);
-            //Log.Debug("Starting Nuke... " + AlphaWarheadController.Host.inProgress);
-			if (!AlphaWarheadController.Host.inProgress) AlphaWarheadController.Host.StartDetonation();
+			if (!Warhead.IsInProgress) Warhead.Start();
 			isAutoNukeGoingOff = true;
-            //Log.Debug("Nuke Started");
-        }
+		}
 
 		internal void OnRoundRestart()
 		{
@@ -89,6 +84,6 @@ namespace Autonuke
 			isAutoNukeGoingOff = false;
 		}
 
-        internal void OnWarheadStop(StoppingEventArgs ev) => ev.IsAllowed = !(!Autonuke.instance.Config.CanStopDetonation && isAutoNukeGoingOff);
-    }
+		internal void OnWarheadStop(StoppingEventArgs ev) => ev.IsAllowed = !(!Autonuke.instance.Config.CanStopDetonation && isAutoNukeGoingOff);
+	}
 }
